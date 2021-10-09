@@ -7,11 +7,11 @@
   </settings>
   <materials>
     <material ID="1" NumGroup="1" Xs_option="input">
-      <transport></transport>
-      <absorption></absorption>
-      <nufission></nufission>
-      <kappafission></kappafission>
-      <scattering></scattering>
+      <transport>1</transport>
+      <absorption>2</absorption>
+      <nufission>3</nufission>
+      <kappafission>4</kappafission>
+      <scattering>5</scattering>
     </material>
   </materials>
   <geometries>
@@ -19,5 +19,8 @@
       <coordinates>0.8 12.4 24.1</coordinates>
       <MatIDs>1 1 1</MatIDs>
     </pin>
+    <lattice ID="1" LatticeType="Line">
+      <latticeGeo>1 1 1 1</latticeGeo>
+    </lattice>
   </geometries>
 </input>
