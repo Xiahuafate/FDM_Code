@@ -1,0 +1,23 @@
+<input>
+  <settings>
+    <flux_density>1</flux_density>
+    <fission_rate></fission_rate>
+    <absorption_rate></absorption_rate>
+    <leak_rate></leak_rate>
+  </settings>
+  <materials>
+    <material ID="1" NumGroup="1" Xs_option="input">
+      <transport></transport>
+      <absorption></absorption>
+      <nufission></nufission>
+      <kappafission></kappafission>
+      <scattering></scattering>
+    </material>
+  </materials>
+  <geometries>
+    <pin ID="1" width="24.1" NumNodes="4" PartitionForm="input">
+      <coordinates>0.8 12.4 24.1</coordinates>
+      <MatIDs>1 1 1</MatIDs>
+    </pin>
+  </geometries>
+</input>
