@@ -13,6 +13,8 @@ def ErrorFunction(i):
                     "the material do not have its nufission cross ssection! \n",\
                     "the material do not have its kappafission cross ssection! \n",\
                     "the material do not have its scattering cross ssection! \n",\
+                    "the geometries do not have its core layer,and it is necsseary!\n",\
+                    "the core layer do not have its coreGeo sonnode, and it is necsseary!\n",\
                     ]
     print(ErrorMassage[i])
     
@@ -110,6 +112,24 @@ class pin:
 class lattice:
     def __int__(self,lattices_tag,id):
         self.id = id
+class core:
+    def __int__(self,geometries_tag):
+        cores_tag = geometries_tag.getElementsByTagName("core")[0]
+        self.coregeo = []
+        try:
+            core_tag = cores_tag[0]
+            self.id = int(core_tag.getAttribute("ID"))
+        except:
+            ErrorFunction(6)
+            os._exit(0)
+        try:
+            coregeo_tag = core_tag.getElementsByTagName("coreGeo")[0]
+            coregeo = coregeo_tag.firstChild.data
+            coregeo = coregeo.strip("\n").split()
+            [self.coregeo.append(int(i)) for i in coregeo]
+        except:
+            Errorfunction(7)
+            os._exit(0)
 
 def InputRead(inputfile):
     file_xml = minidom.parse(inputfile)
