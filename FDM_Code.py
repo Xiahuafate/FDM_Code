@@ -103,6 +103,14 @@ class material:
                 ErrorFunction(5)
                 os._exit(0)
 
+class pin:
+    def __int__(self,pins_tag,id):
+        self.id = id
+        
+class lattice:
+    def __int__(self,lattices_tag,id):
+        self.id = id
+
 def InputRead(inputfile):
     file_xml = minidom.parse(inputfile)
     input_tag = file_xml.getElementsByTagName("input")[0]
