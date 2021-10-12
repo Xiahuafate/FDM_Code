@@ -4,6 +4,7 @@
     <fission_rate></fission_rate>
     <absorption_rate></absorption_rate>
     <leak_rate></leak_rate>
+    <boundary>left="1.0" right="0.0"</boundary>
   </settings>
   <materials>
     <material ID="1" NumGroup="1" Xs_option="input">

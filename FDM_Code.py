@@ -7,14 +7,22 @@ from xml.dom import minidom
 # a function for the main
 # a function for the input card read
 def ErrorFunction(i):
-    ErrorMassage = ["the material do not have its ID！\n",\
-                    "the material do not have its transport cross ssection! \n",\
-                    "the material do not have its absorption cross ssection! \n",\
-                    "the material do not have its nufission cross ssection! \n",\
-                    "the material do not have its kappafission cross ssection! \n",\
-                    "the material do not have its scattering cross ssection! \n",\
-                    "the geometries do not have its core layer,and it is necsseary!\n",\
-                    "the core layer do not have its coreGeo sonnode, and it is necsseary!\n",\
+    ErrorMassage = ["Error 0 :the material do not have its ID！\n",\
+                    "Error 1 :the material do not have its transport cross ssection! \n",\
+                    "Error 2 :the material do not have its absorption cross ssection! \n",\
+                    "Error 3 :the material do not have its nufission cross ssection! \n",\
+                    "Error 4 :the material do not have its kappafission cross ssection! \n",\
+                    "Error 5 :the material do not have its scattering cross ssection! \n",\
+                    "Error 6 :the geometries do not have its core layer,and it is necsseary!\n",\
+                    "Error 7 :the core layer do not have its coreGeo son-node, and it is necsseary!\n",\
+                    "Error 8 :the lattice id defined in core that can not be found in lattice layer!\n",\
+                    "Error 9 :the lattice layer do not have its latticeGeo son-node, and it is necsseary!\n",\
+                    "Error 10 :the pin id defined in lattice that can not be found in pin layer!\n",\
+                    "Error 11 :the defined pin do not have the lable of width!\n",\
+                    "Error 12 :the defined pin do not have the lable of NumNodes!\n",\
+                    "Error 13 :the pin layer do not have its coordinates son-node, and it is necsseary!\n",\
+                    "Error 14 :the pin layer do not have its MatIDs son-node, and it is necsseary!\n",\
+                    "Error 15 :",\
                     ]
     print(ErrorMassage[i])
     
@@ -41,6 +49,15 @@ class settings:
             self.leak_rate = int(leak_rate_tag.firstChild.data)
         except:
             self.leak_rate = 0
+        try:
+            boundary_tag = settings_tag.getElementsByTagName("boundary")
+            self.boundary_left = boundary_tag.getAttribute("left")
+            self.boundary_left = float(self.boundary_left)
+            self.boundary_right = boundary_tag.getAttribute("right")
+            self.boundary_right = float(self.boundary_right)
+        except:
+            self.boundary_left = 1.0
+            self.boundary_right = 1.0
 
 class material:
     def __init__(self,material_tag):
@@ -106,19 +123,96 @@ class material:
                 os._exit(0)
 
 class pin:
-    def __int__(self,pins_tag,id):
+    def __init__(self,geometries_tag,id):
         self.id = id
+        self.coordinates = []
+        self.matids = []
+        self.mat_list = []
+        pins_tag = geometries_tag.getElementsByTagName("pin")
+        for pin_tag in pins_tag:
+            id = pin_tag.getAttribute("ID")
+            id = int(id)
+            if id == self.id:
+                break
+        if id != self.id:
+            ErrorFunction(10)
+            os._exit(0)
+        try:
+            self.width = float(pin_tag.getAttribute("width"))
+        except:
+            ErrorFunction(11)
+            os._exit(0)
+        try:
+            self.numnodes = float(pin_tag.getAttribute("NumNodes"))
+        except:
+            ErrorFunction(12)
+            os._exit(0)
+        try:
+            self.partitionform = pin_tag.getAttribute("PartitionForm")
+        except:
+            self.partitionform = "input"
+        
+        if self.partitionform == "input":
+            try:
+                coordinates_tag = pin_tag.getElementsByTagName("coordinates")[0]
+                coordinates = coordinates_tag.firstChild.data
+                coordinates = coordinates.strip("\n").split()
+                [self.coordinates.append(float(i)) for i in coordinates]
+            except:
+                ErrorFunction(13)
+                os._exit(0)
+            try:
+                matids_tag = pin_tag.getElementsByTagName("MatIDs")[0]
+                matids = matids_tag.firstChild.data
+                matids = matids.strip("\n").split()
+                [self.matids.append(int(i)) for i in matids]
+            except:
+                ErrorFunction(14)
+                os._exit(0)
         
 class lattice:
-    def __int__(self,lattices_tag,id):
+    def __init__(self,geometries_tag,id):
         self.id = id
+        self.latticegeo = []
+        self.pin_list = []
+        lattices_tag = geometries_tag.getElementsByTagName("lattice")
+        for lattice_tag in lattices_tag:
+            id = lattice_tag.getAttribute("ID")
+            id = int(id)
+            if id == self.id:
+                break
+        if id != self.id:
+            ErrorFunction(8)
+            os._exit(0)
+        try:
+            self.latticetype = lattice_tag.getAttribute("LatticeType")
+        except:
+            self.latticetype = "Line"
+        try:
+            latticegeo_tag = lattice_tag.getElementsByTagName("latticeGeo")[0]
+            latticegeo = latticegeo_tag.firstChild.data
+            latticegeo = latticegeo.strip("\n").split()
+            [self.latticegeo.append(int(i)) for i in latticegeo]
+            self.latticegeo = np.array(self.latticegeo)
+        except:
+            ErrorFunction(9)
+            os._exit(0)
+        for pin_id in np.unique(self.latticegeo):
+            self.pin_list.append(pin(geometries_tag,pin_id))
+
+        
+
 class core:
-    def __int__(self,geometries_tag):
-        cores_tag = geometries_tag.getElementsByTagName("core")[0]
+    # This is a class for the core
+    # id: it is the core's id and usually it is 1
+    # coregeo: it is the array of lattice and usually it is a list about integer
+    def __init__(self,geometries_tag):
+        cores_tag = geometries_tag.getElementsByTagName("core")
         self.coregeo = []
+        self.lattice_list = []
         try:
             core_tag = cores_tag[0]
-            self.id = int(core_tag.getAttribute("ID"))
+            self.id = int(core_tag.getAttribute("ID")) # get the value of core's ID
         except:
             ErrorFunction(6)
             os._exit(0)
@@ -126,10 +220,14 @@ class core:
             coregeo_tag = core_tag.getElementsByTagName("coreGeo")[0]
             coregeo = coregeo_tag.firstChild.data
             coregeo = coregeo.strip("\n").split()
-            [self.coregeo.append(int(i)) for i in coregeo]
+            [self.coregeo.append(int(i)) for i in coregeo] # get the array of lattice 
+            self.coregeo = np.array(self.coregeo)
         except:
             Errorfunction(7)
             os._exit(0)
+
+        for lattice_id in np.unique(self.coregeo):
+            self.lattice_list.append(lattice(geometries_tag,lattice_id)) 
 
 def InputRead(inputfile):
     file_xml = minidom.parse(inputfile)
@@ -141,11 +239,15 @@ def InputRead(inputfile):
     material_list = []
     for i in range(len(material_tag)):
         material_list.append(material(material_tag[i]))
-    print(1)
+    geometries_tag = input_tag.getElementsByTagName("geometries")[0]
+    coredata = core(geometries_tag)
+    return setting, material_list, coredata
 
 # a function for creating the martix
+def CreateMartix(setting,material_list,coredata):
+    print(1)
 # a function for solving the martix
 # a function for the outputing of data
 # a function for the checking of other functions
-print(1)
-InputRead("FDM_Code_input.xml")
+setting, material_list, coredata = InputRead("FDM_Code_input.xml")
+CreateMartix(setting,material_list,coredata)
