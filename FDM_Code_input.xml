@@ -22,5 +22,8 @@
     <lattice ID="1" LatticeType="Line">
       <latticeGeo>1 1 1 1</latticeGeo>
     </lattice>
+	 <core ID="1">
+		 <coreGeo>1</coreGeo>
+	 </core>
   </geometries>
 </input>
