@@ -174,7 +174,7 @@ class lattice:
     def __init__(self,geometries_tag,id):
         self.id = id
         self.latticegeo = []
-        self.pin_list = []
+        self.pin_list = [0]
         lattices_tag = geometries_tag.getElementsByTagName("lattice")
         for lattice_tag in lattices_tag:
             id = lattice_tag.getAttribute("ID")
@@ -209,7 +209,7 @@ class core:
     def __init__(self,geometries_tag):
         cores_tag = geometries_tag.getElementsByTagName("core")
         self.coregeo = []
-        self.lattice_list = []
+        self.lattice_list = [0]
         try:
             core_tag = cores_tag[0]
             self.id = int(core_tag.getAttribute("ID")) # get the value of core's ID
@@ -245,6 +245,19 @@ def InputRead(inputfile):
 
 # a function for creating the martix
 def CreateMartix(setting,material_list,coredata):
+    # get the Distribution of nodes and the Composition of grid 
+    length = 0.0
+    nodes = [0.0]
+    mat_nodes = []
+    for i in coredata.coregeo:
+        lattice_geo = coredata.lattice_list[i]
+        for j in lattice_geo.latticegeo:
+            pin_geo = lattice_geo.pin_list[j]
+            length = length + nodes[-1]
+            for k in pin_geo.coordinates:
+                nodes.append(length + k)
+            for k in pin_geo.matids:
+                mat_nodes.append(k)
     print(1)
 # a function for solving the martix
 # a function for the outputing of data
