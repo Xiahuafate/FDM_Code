@@ -5,6 +5,8 @@
     <absorption_rate></absorption_rate>
     <leak_rate></leak_rate>
     <boundary>left="1.0" right="0.0"</boundary>
+    <criterion FerrInLimit="1.0E-05" FerrOutLimit="1.0E-4" KerrLimit="1.0E-5" MaxNinIter="10" MaxNoutIter="200"></criterion>
+    <MatrixSolutionMethod>matrix inversion</MatrixSolutionMethod>
   </settings>
   <materials>
     <material ID="1" NumGroup="1" Xs_option="input">
