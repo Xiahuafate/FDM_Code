@@ -22,7 +22,7 @@ def ErrorFunction(i):
                     "Error 12 :the defined pin do not have the lable of NumNodes!\n",\
                     "Error 13 :the pin layer do not have its coordinates son-node, and it is necsseary!\n",\
                     "Error 14 :the pin layer do not have its MatIDs son-node, and it is necsseary!\n",\
-                    "Error 15 :",\
+                    "Error 15 :the Matrix Solution Method is not correct!\n",\
                     ]
     print(ErrorMassage[i])
     
@@ -45,12 +45,12 @@ class settings:
         except:
             self.absorption_rate = 0
         try:
-            leak_rate_tag = settings_tag.getElementsByTagName("leak_rate")
+            leak_rate_tag = settings_tag.getElementsByTagName("leak_rate")[0]
             self.leak_rate = int(leak_rate_tag.firstChild.data)
         except:
             self.leak_rate = 0
         try:
-            boundary_tag = settings_tag.getElementsByTagName("boundary")
+            boundary_tag = settings_tag.getElementsByTagName("boundary")[0]
             self.boundary_left = boundary_tag.getAttribute("left")
             self.boundary_left = float(self.boundary_left)
             self.boundary_right = boundary_tag.getAttribute("right")
@@ -58,6 +58,29 @@ class settings:
         except:
             self.boundary_left = 1.0
             self.boundary_right = 1.0
+        try:
+            criterion_tag = settings_tag.getElementsByTagName("criterion")[0]
+            self.ferrinlimit = criterion_tag.getAttribute("FerrInLimit")
+            self.ferrinlimit = float(self.ferrinlimit)
+            self.ferroutlimit = criterion_tag.getAttribute("FerrOutLimit")
+            self.ferroutlimit = float(self.ferroutlimit)
+            self.kerrlimit = criterion_tag.getAttribute("KerrLimit")
+            self.kerrlimit = float(self.kerrlimit)
+            self.maxniniter = criterion_tag.getAttribute("MaxNinIter")
+            self.maxniniter = int(self.maxniniter)
+            self.maxnoutiter = criterion_tag.getAttribute("MaxNoutIter")
+            self.maxnoutiter = int(self.maxnoutiter)
+        except:
+            self.ferrinlimit = 1.0E-5
+            self.ferroutlimit = 1.0E-4
+            self.kerrlimit = 1.0E-5
+            self.maxniniter = 10
+            self.maxnoutiter = 200
+        try:
+            matrixsolutionmethod_tag = settings_tag.getElementsByTagName("MatrixSolutionMethod")[0]
+            self.matrixsolutionmethod = matrixsolutionmethod_tag.firstChild.data
+        except:
+            self.matrixsolutionmethod = "matrix inversion"
 
 class material:
     def __init__(self,material_tag):
@@ -236,7 +259,7 @@ def InputRead(inputfile):
     setting = settings(settings_tag)
     materials_tag = input_tag.getElementsByTagName("materials")[0]
     material_tag = materials_tag.getElementsByTagName("material")
-    material_list = []
+    material_list = [0]
     for i in range(len(material_tag)):
         material_list.append(material(material_tag[i]))
     geometries_tag = input_tag.getElementsByTagName("geometries")[0]
@@ -258,9 +281,72 @@ def CreateMartix(setting,material_list,coredata):
                 nodes.append(length + k)
             for k in pin_geo.matids:
                 mat_nodes.append(k)
-    print(1)
+    # get the martix of yhe equation 
+    matrix_m = np.matrix(np.zeros((int(len(nodes)),int(len(nodes)))))
+    matrix_f = np.matrix(np.zeros((int(len(nodes)),1)))
+    # deal the boundary
+    # the boundary in left side
+    beta_left = setting.boundary_left
+    D1 = 1.0/(3 * material_list[mat_nodes[0]].transport[0])
+    deta1  = nodes[1] - nodes[0]
+    matrix_m[0,0] = (1 - beta_left)/4.0 + (1 + beta_left)/2.0 * (D1/deta1)
+    matrix_m[0,1] = -(1 + beta_left)/2.0 * ((D1/deta1))
+    matrix_f[0,0] = 0
+    # the boundary in right side
+    beta_right = setting.boundary_right
+    DN = 1.0/(3 * material_list[mat_nodes[-1]].transport[0])
+    detaN = nodes[-1] - nodes[-2]
+    matrix_m[-1,-1] = (1 - beta_right)/4.0 + (1 + beta_right)/2.0 * (DN/detaN)
+    matrix_m[-1,-2] = -(1 + beta_right)/2.0 * ((DN/detaN))
+    matrix_f[-1,0] = 0
+    # Process intermediate grid points
+    for i in range(1,len(nodes) - 1):
+        Di = 1.0/(3 * material_list[mat_nodes[i-1]].transport[0])
+        Di_1 = 1.0/(3 * material_list[mat_nodes[i]].transport[0])
+        detai = nodes[i] - nodes[i-1]
+        detai_1 = nodes[i+1] - nodes[i]
+        absorptioni = material_list[mat_nodes[i-1]].absorption[0]
+        absorptioni_1 = material_list[mat_nodes[i]].absorption[0]
+        nufissioni = material_list[mat_nodes[i-1]].nufission[0]
+        nufissioni_1 = material_list[mat_nodes[i]].nufission[0]
+        matrix_m[i,i-1] = -Di/detai
+        matrix_m[i,i] = (absorptioni * detai)/2.0 + (absorptioni_1 * detai_1)/2 + Di_1/detai_1 + Di/detai
+        matrix_m[i,i+1] = -Di_1/detai_1
+        matrix_f[i,0] = nufissioni * detai /2.0 + nufissioni_1* detai_1 / 2.0
+    return matrix_m,matrix_f
 # a function for solving the martix
+def SolveMatrix(matrix_m,matrix_f,setting,material_list,coredata):
+    # get the first value of k and flux ?
+    flux = np.ones(matrix_f.shape)
+    F1 = np.zeros(matrix_f.shape)
+    F2 = np.zeros(matrix_f.shape)
+    k_inf = [1.0]
+    ord_num = 1# fanshu
+    for i in range(setting.maxnoutiter):# this is the outside iteration
+
+        for j in range(matrix_f.shape[0]):
+            F1[j,0] = matrix_f[j,0] * flux[j,0]
+
+        if setting.matrixsolutionmethod == "matrix inversion":
+            print(1)
+            flux_i = np.linalg.inv(matrix_m)@(F1/k_inf[i])
+        elif setting.matrixsolutionmethod == "thomas":
+            print(2)
+        else:
+            ErrorFunction(15)
+            os._exit(0)
+
+        for j in range(matrix_f.shape[0]):
+            F2[j,0] = matrix_f[j,0] * flux_i[j,0]
+
+        k_inf.append((k_inf[i] * np.linalg.norm(F2,ord = ord_num)/np.linalg.norm(F1,ord = ord_num)))
+
+        if np.abs((k_inf[i+1] - k_inf[i])/k_inf[i + 1]) <= setting.kerrlimit:
+            break
+        else:
+            flux = flux_i
 # a function for the outputing of data
 # a function for the checking of other functions
 setting, material_list, coredata = InputRead("FDM_Code_input.xml")
-CreateMartix(setting,material_list,coredata)
+matrix_m,matrix_f = CreateMartix(setting,material_list,coredata)
+SolveMatrix(matrix_m,matrix_f,setting,material_list,coredata)
