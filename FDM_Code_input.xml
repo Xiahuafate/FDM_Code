@@ -1,29 +1,40 @@
 <input>
   <settings>
     <flux_density>1</flux_density>
-    <fission_rate></fission_rate>
-    <absorption_rate></absorption_rate>
-    <leak_rate></leak_rate>
-    <boundary>left="1.0" right="0.0"</boundary>
-    <criterion FerrInLimit="1.0E-05" FerrOutLimit="1.0E-4" KerrLimit="1.0E-5" MaxNinIter="10" MaxNoutIter="200"></criterion>
-    <MatrixSolutionMethod>matrix inversion</MatrixSolutionMethod>
+    <fission_rate>1</fission_rate>
+    <absorption_rate>1</absorption_rate>
+    <leak_rate>1</leak_rate>
+    <boundary left="1.0" right="0.0"></boundary>
+    <criterion MaxNoutIter="200"></criterion>
+    <MatrixSolutionMethod>thomas</MatrixSolutionMethod>
   </settings>
   <materials>
     <material ID="1" NumGroup="1" Xs_option="input">
-      <transport>1</transport>
-      <absorption>2</absorption>
-      <nufission>3</nufission>
+      <transport>1.0</transport>
+      <absorption>0.5</absorption>
+      <nufission>1</nufission>
+      <kappafission>4</kappafission>
+      <scattering>0.5</scattering>
+    </material>
+    <material ID="2" NumGroup="1" Xs_option="input">
+      <transport>0.8</transport>
+      <absorption>0.4</absorption>
+      <nufission>0.0</nufission>
       <kappafission>4</kappafission>
       <scattering>5</scattering>
     </material>
   </materials>
   <geometries>
-    <pin ID="1" width="24.1" NumNodes="4" PartitionForm="input">
+    <pin ID="1" width="2" NumNodes="2001" PartitionForm="uniform">
       <coordinates>0.8 12.4 24.1</coordinates>
-      <MatIDs>1 1 1</MatIDs>
+      <MatIDs>1</MatIDs>
+    </pin>
+    <pin ID="2" width="3" NumNodes="3001" PartitionForm="uniform">
+      <coordinates>0.8 12.4 24.1</coordinates>
+      <MatIDs>2</MatIDs>
     </pin>
     <lattice ID="1" LatticeType="Line">
-      <latticeGeo>1 1 1 1</latticeGeo>
+      <latticeGeo>1 2</latticeGeo>
     </lattice>
 	 <core ID="1">
 		 <coreGeo>1</coreGeo>
